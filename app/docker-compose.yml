@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  fastapi_backend:
+    build: ./backend
+    image: fastapi-image
+    container_name: simple_fastapi_ct 
+    restart: unless-stopped
+    ports:
+      # Expose FastAPI only to localhost on the VM. Caddy will handle public access.
+      - "127.0.0.1:8000:8000" 
+    networks:
+      - app-network
+
+  streamlit_frontend:
+    build: ./frontend
+    image: streamlit-image
+    container_name: simple_streamlit_ct
+    restart: unless-stopped
+    ports:
+      # Expose Streamlit only to localhost on the VM. Caddy will handle public access.
+      - "8501:8501" 
+    environment:
+      # Streamlit app connects to FastAPI using its service name on the Docker network
+      - FASTAPI_BACKEND_URL=http://fastapi_backend:8000 
+    depends_on:
+      - fastapi_backend # Ensures backend starts before frontend attempts to connect
+    networks:
+      - app-network
+
+networks:
+  app-network: # Defines a custom bridge network for these services
+    driver: bridge
