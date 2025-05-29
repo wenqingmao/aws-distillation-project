@@ -1,11 +1,11 @@
 import streamlit as st
 import requests
 import os
-import json # For safely handling JSON in case of errors
+import json 
 
 # Page configuration
 st.set_page_config(layout="wide", page_title="Model Chatbot")
-st.title("🧠 Student Model Chat Interface")
+st.title("Distilled SLM: PubMedQA Interface")
 
 # Get the FastAPI backend URL from environment variable
 FASTAPI_URL = os.getenv("FASTAPI_BACKEND_URL", "http://localhost:8000/").rstrip('/')
@@ -46,12 +46,12 @@ with st.sidebar:
     st.header("Chat Controls")
     if st.button("Clear Chat History"):
         # Initialize with a greeting from the assistant
-        st.session_state.messages = [{"role": "assistant", "content": "Hi! I'm ready for your text. What would you like me to analyze?"}]
+        st.session_state.messages = [{"role": "assistant", "content": "Hi! I'm ready for PubMedQA questions. What would you like me to analyze?"}]
         st.rerun() # Rerun to update the display
 
 # Initialize/Load chat history in session state
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Hi! I'm ready for your text. What would you like me to analyze?"}]
+    st.session_state.messages = [{"role": "assistant", "content": "Hi! I'm ready for PubMedQA questions. What would you like me to analyze?"}]
 
 # Initial backend check on first load
 if "backend_checked_initially" not in st.session_state:
@@ -73,17 +73,14 @@ with col_chat:
                     st.json(message["details"])
 
 # Chat input - place it logically after displaying messages
-# Needs to be outside the column if you want it full width, or inside col_chat for it to be in that column
-# For this layout, let's keep it within col_chat for visual grouping.
 with col_chat:
-    if prompt := st.chat_input("Enter text for the model..."):
+    if prompt := st.chat_input("Enter your PubMedQA question here..."):
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
         # Rerun to display the user's message immediately
         st.rerun()
 
 # Process the latest user message if it exists and hasn't been "answered" by the assistant yet
-# This logic helps prevent re-processing if st.rerun happens for other reasons
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     user_input_text = st.session_state.messages[-1]["content"]
     
@@ -92,7 +89,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
         try:
             api_response = requests.post(f"{FASTAPI_URL}/predict/", json=payload, timeout=30) # Call /predict/
             
-            assistant_response_content = "Sorry, I encountered an issue." # Default error message
+            assistant_response_content = "Sorry, I encountered an issue." # Error message
             prediction_details_for_expander = {}
 
             if api_response.status_code == 200:
@@ -131,5 +128,5 @@ with col_info:
     - You can view detailed probabilities in the expander below the assistant's response.
     - Use the sidebar to check backend status or clear the chat.
     """)
-    if st.button("Show Raw Chat History (Debug)", key="debug_history"):
-        st.json(st.session_state.messages)
+    # if st.button("Show Raw Chat History (Debug)", key="debug_history"):
+    #     st.json(st.session_state.messages)

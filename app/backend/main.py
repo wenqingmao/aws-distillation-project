@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from transformers import AutoTokenizer, AutoModelForSequenceClassification # Ensure this is correct for your model
+from transformers import AutoTokenizer, AutoModelForSequenceClassification 
 import torch
 import os
 
@@ -10,12 +10,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MODEL_DIR_INSIDE_CONTAINER = "/app/mounted_model" # Path where model is mounted in container
 tokenizer = None
 model = None
-model_load_error = None # To store any error during model loading
+model_load_error = None 
 
 @app.on_event("startup")
 async def load_model_on_startup():
     global tokenizer, model, model_load_error
-    print(f"Attempting to load model for Phase 2.B. Device: {device}")
     if not os.path.exists(MODEL_DIR_INSIDE_CONTAINER) or not os.listdir(MODEL_DIR_INSIDE_CONTAINER):
         model_load_error = f"Model directory '{MODEL_DIR_INSIDE_CONTAINER}' is empty or does not exist. Check volume mount in docker-compose.yml."
         print(f"ERROR: {model_load_error}")
@@ -41,14 +40,14 @@ class PredictionPayload(BaseModel):
 @app.get("/")
 def read_root():
     if model and tokenizer:
-        return {"message": f"FastAPI Model Backend (Phase 2.B) is running! Model loaded on {device}."}
+        return {"message": f"FastAPI Model Backend is running! Model loaded on {device}."}
     elif model_load_error:
         return {"message": "FastAPI Model Backend - Model Loading FAILED.", "error": model_load_error}
     else:
         return {"message": "FastAPI Model Backend - Model is initializing or encountered an issue.", "model_loaded": False}
     
 
-@app.post("/predict/") # This is our main prediction endpoint now
+@app.post("/predict/") # This is our main prediction endpoint
 async def predict(payload: PredictionPayload):
     if not model or not tokenizer:
         return {"error": "Model not loaded or not ready. Please check server logs or the /health endpoint.", "details": model_load_error}
@@ -70,7 +69,7 @@ async def predict(payload: PredictionPayload):
             2: "Yes"
         }
         
-        # Use the custom mapping. Fallback if id is unexpected (shouldn't happen if model has 3 classes)
+        # Use the custom mapping. Fallback if id is unexpected 
         predicted_string_label = custom_id_to_label.get(predicted_class_id, f"UNKNOWN_ID_{predicted_class_id}")
 
         return {
@@ -82,9 +81,6 @@ async def predict(payload: PredictionPayload):
 
     except Exception as e:
         print(f"Prediction endpoint error: {e}")
-        # Consider logging the full traceback here for better debugging if needed
-        # import traceback
-        # print(traceback.format_exc())
         return {"error": f"Prediction endpoint error: {str(e)}"}
 
 @app.get("/health")
@@ -102,7 +98,7 @@ def health_check():
 
     return {
         "status": "healthy" if model_status == "loaded" else "unhealthy",
-        "timestamp": torch.cuda.Event(enable_timing=True).record() if gpu_available_torch else None, # Just an example, might not be best
+        "timestamp": torch.cuda.Event(enable_timing=True).record() if gpu_available_torch else None, 
         "model_status": model_status,
         "model_load_error": model_error_details,
         "device_used_by_model": str(device) if model else "N/A (model not loaded)",
